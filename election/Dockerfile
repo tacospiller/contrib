@@ -11,6 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+FROM golang:1.14-alpine as build-go
+
+RUN apk add build-base
+
+COPY . /go/src/k8s.io/contrib/election
+WORKDIR /go/src/k8s.io/contrib/election
+RUN go build -o /server ./lib/election.go
 
 FROM debian:jessie
 MAINTAINER Brendan B <bburns@google.com>
@@ -23,6 +30,5 @@ RUN \
   apt-get install -y ca-certificates && \
   rm -rf /var/lib/apt/lists/*
 
-ADD server server
-ADD run.sh /run.sh
-ENTRYPOINT ["/run.sh"]
+COPY --from=build-go /server /server
+ENTRYPOINT ["/server", "--id=$(hostname)"]
